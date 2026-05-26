@@ -27,7 +27,6 @@ try:
     from selenium.webdriver.common.by import By
     from selenium.webdriver.support.ui import WebDriverWait
     from selenium.webdriver.support import expected_conditions as EC
-    from webdriver_manager.chrome import ChromeDriverManager
     SELENIUM_OK = True
 except ImportError:
     SELENIUM_OK = False
@@ -45,71 +44,45 @@ st.markdown("""
 <style>
 [data-testid="stSidebar"] { background: #0f0f1a; }
 [data-testid="stSidebar"] * { color: #e2e8f0 !important; }
-.main { background: #0d0d18; }
 .stApp { background: #0d0d18; }
-
-.metric-card {
-    background: #1a1a2e;
-    border: 1px solid #2a2a45;
-    border-radius: 10px;
-    padding: 16px;
-    text-align: center;
+div[data-testid="stExpander"] {
+    border: 1px solid #2a2a45 !important;
+    border-radius: 10px !important;
+    background: #1a1a2e !important;
 }
-.metric-val { font-size: 28px; font-weight: 700; }
-.metric-lbl { font-size: 12px; color: #64748b; margin-top: 2px; }
-
-.result-card {
-    background: #1a1a2e;
-    border: 1px solid #2a2a45;
-    border-radius: 10px;
-    padding: 14px 18px;
-    margin-bottom: 10px;
-}
-.asin-mono { font-family: monospace; font-size: 13px; font-weight: 700; color: #60a5fa; }
-.badge-found  { background: rgba(34,197,94,.15);  color: #22c55e; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
-.badge-failed { background: rgba(239,68,68,.15);  color: #ef4444; padding: 3px 10px; border-radius: 99px; font-size: 11px; font-weight: 600; }
-.url-mono { font-family: monospace; font-size: 11px; color: #94a3b8; word-break: break-all; }
-
-div[data-testid="stExpander"] { border: 1px solid #2a2a45 !important; border-radius: 10px !important; background: #1a1a2e !important; }
 div[data-testid="stExpander"] summary { background: #1a1a2e !important; }
-
-.stButton > button {
-    border-radius: 8px !important;
-    font-weight: 600 !important;
-}
 .stProgress > div > div { background: #3b82f6 !important; }
 </style>
 """, unsafe_allow_html=True)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 MARKETPLACES = {
-    "🇩🇪 Germany   (amazon.de)":     "amazon.de",
-    "🇺🇸 USA        (amazon.com)":    "amazon.com",
-    "🇬🇧 UK         (amazon.co.uk)":  "amazon.co.uk",
-    "🇫🇷 France     (amazon.fr)":     "amazon.fr",
-    "🇮🇹 Italy      (amazon.it)":     "amazon.it",
-    "🇪🇸 Spain      (amazon.es)":     "amazon.es",
-    "🇳🇱 Netherlands(amazon.nl)":     "amazon.nl",
-    "🇸🇪 Sweden     (amazon.se)":     "amazon.se",
-    "🇵🇱 Poland     (amazon.pl)":     "amazon.pl",
-    "🇯🇵 Japan      (amazon.co.jp)":  "amazon.co.jp",
-    "🇨🇦 Canada     (amazon.ca)":     "amazon.ca",
-    "🇦🇺 Australia  (amazon.com.au)": "amazon.com.au",
-    "🇮🇳 India      (amazon.in)":     "amazon.in",
-    "🇧🇷 Brazil     (amazon.com.br)": "amazon.com.br",
-    "🇲🇽 Mexico     (amazon.com.mx)": "amazon.com.mx",
-    "🇦🇪 UAE        (amazon.ae)":     "amazon.ae",
-    "🇸🇦 Saudi Arabia(amazon.sa)":   "amazon.sa",
-    "🇸🇬 Singapore  (amazon.sg)":     "amazon.sg",
-    "🇹🇷 Turkey     (amazon.com.tr)": "amazon.com.tr",
-    "🇪🇬 Egypt      (amazon.eg)":     "amazon.eg",
+    "🇩🇪 Germany    (amazon.de)":     "amazon.de",
+    "🇺🇸 USA         (amazon.com)":    "amazon.com",
+    "🇬🇧 UK          (amazon.co.uk)":  "amazon.co.uk",
+    "🇫🇷 France      (amazon.fr)":     "amazon.fr",
+    "🇮🇹 Italy       (amazon.it)":     "amazon.it",
+    "🇪🇸 Spain       (amazon.es)":     "amazon.es",
+    "🇳🇱 Netherlands (amazon.nl)":     "amazon.nl",
+    "🇸🇪 Sweden      (amazon.se)":     "amazon.se",
+    "🇵🇱 Poland      (amazon.pl)":     "amazon.pl",
+    "🇯🇵 Japan       (amazon.co.jp)":  "amazon.co.jp",
+    "🇨🇦 Canada      (amazon.ca)":     "amazon.ca",
+    "🇦🇺 Australia   (amazon.com.au)": "amazon.com.au",
+    "🇮🇳 India       (amazon.in)":     "amazon.in",
+    "🇧🇷 Brazil      (amazon.com.br)": "amazon.com.br",
+    "🇲🇽 Mexico      (amazon.com.mx)": "amazon.com.mx",
+    "🇦🇪 UAE         (amazon.ae)":     "amazon.ae",
+    "🇸🇦 Saudi Arabia(amazon.sa)":     "amazon.sa",
+    "🇸🇬 Singapore   (amazon.sg)":     "amazon.sg",
+    "🇹🇷 Turkey      (amazon.com.tr)": "amazon.com.tr",
+    "🇪🇬 Egypt       (amazon.eg)":     "amazon.eg",
 }
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def to_fullres(url):
-    """Strip Amazon size codes → full resolution."""
     if not url:
         return url
     return re.sub(r'\._[A-Za-z0-9_,]+_\.', '.', url)
@@ -139,12 +112,6 @@ def parse_asins(text):
 # ── Core image extraction ─────────────────────────────────────────────────────
 
 def extract_images(html, driver=None):
-    """
-    Extract ALL images for the SELECTED VARIANT only.
-    - colorImages['initial'] = JSON for this variant (main source)
-    - Selenium thumbnail clicks = catches lifestyle/infographic shots missing from JSON
-    - Scoped raw scan = no cross-variant contamination
-    """
     seen = set()
     urls = []
     variant_ids = set()
@@ -162,7 +129,7 @@ def extract_images(html, driver=None):
             if m:
                 variant_ids.add(m.group(1))
 
-    # 1. colorImages["initial"] — selected variant only ───────────────────────
+    # 1. colorImages["initial"] — selected variant only
     m = re.search(
         r'"colorImages"\s*:\s*\{[^{]*?"initial"\s*:\s*(\[.*?\])\s*[,}]',
         html, re.DOTALL)
@@ -180,7 +147,7 @@ def extract_images(html, driver=None):
         except Exception:
             pass
 
-    # 2. Selenium thumbnail clicks — catches missing images ───────────────────
+    # 2. Selenium thumbnail clicks — catches missing images
     if driver:
         try:
             main_el = None
@@ -188,11 +155,9 @@ def extract_images(html, driver=None):
                 main_el = driver.find_element(By.ID, "landingImage")
             except Exception:
                 pass
-
             thumbs = driver.find_elements(
                 By.CSS_SELECTOR,
                 "#altImages li.item, #altImages .imageThumbnail")
-
             for thumb in thumbs:
                 try:
                     driver.execute_script(
@@ -208,11 +173,11 @@ def extract_images(html, driver=None):
         except Exception:
             pass
 
-    # 3. data-old-hires attributes ────────────────────────────────────────────
+    # 3. data-old-hires attributes
     for u in re.findall(r'data-old-hires=["\']([^"\']+)["\']', html):
         add(u)
 
-    # 4. Scoped raw HTML scan — only confirmed variant image IDs ──────────────
+    # 4. Scoped raw HTML scan
     for vid in variant_ids:
         pat = (r'https://m\.media-amazon\.com/images/I/'
                + re.escape(vid)
@@ -223,22 +188,56 @@ def extract_images(html, driver=None):
     return urls
 
 
+# ── Chrome driver ─────────────────────────────────────────────────────────────
+
 @st.cache_resource(show_spinner=False)
 def get_driver():
-    """Cached Chrome driver — reused across runs."""
+    """
+    Cached Chrome driver.
+    On Streamlit Cloud: uses system Chromium + system chromedriver (version-matched).
+    Locally: falls back to webdriver-manager auto-download.
+    """
+    import os, shutil
+
     opts = Options()
     opts.add_argument("--headless=new")
     opts.add_argument("--no-sandbox")
     opts.add_argument("--disable-dev-shm-usage")
     opts.add_argument("--disable-blink-features=AutomationControlled")
+    opts.add_argument("--disable-gpu")
+    opts.add_argument("--window-size=1366,900")
+    opts.add_argument("--disable-extensions")
+    opts.add_argument("--disable-infobars")
     opts.add_experimental_option("excludeSwitches", ["enable-automation"])
     opts.add_experimental_option("useAutomationExtension", False)
-    opts.add_argument("--window-size=1366,900")
     opts.add_argument(
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
     )
-    svc = Service(ChromeDriverManager().install())
+
+    # System chromium paths (Streamlit Cloud / Linux)
+    chromium_paths = [
+        "/usr/bin/chromium",
+        "/usr/bin/chromium-browser",
+        "/usr/bin/google-chrome",
+        "/usr/bin/google-chrome-stable",
+    ]
+    chromedriver_paths = [
+        "/usr/bin/chromedriver",
+        "/usr/lib/chromium/chromedriver",
+        "/usr/lib/chromium-browser/chromedriver",
+    ]
+
+    chromium_bin    = next((p for p in chromium_paths    if os.path.exists(p)), None)
+    chromedriver_bin = next((p for p in chromedriver_paths if os.path.exists(p)), None)
+
+    if chromium_bin and chromedriver_bin:
+        opts.binary_location = chromium_bin
+        svc = Service(executable_path=chromedriver_bin)
+    else:
+        from webdriver_manager.chrome import ChromeDriverManager
+        svc = Service(ChromeDriverManager().install())
+
     driver = webdriver.Chrome(service=svc, options=opts)
     driver.execute_cdp_cmd(
         "Page.addScriptToEvaluateOnNewDocument",
@@ -282,7 +281,6 @@ with st.sidebar:
 st.title("🛒 Amazon Image Extractor")
 st.caption("Extracts all full-resolution images for the selected variant · Powered by real Chrome")
 
-# Input
 asin_input = st.text_area(
     "ASINs or DP links — one per line",
     height=140,
@@ -299,33 +297,30 @@ if asins:
 
 col1, col2, col3 = st.columns([2, 1, 1])
 with col1:
-    run = st.button("⚡ Extract ALL images", type="primary",
-                    disabled=not asins or not SELENIUM_OK,
-                    use_container_width=True)
+    run = st.button(
+        "⚡ Extract ALL images",
+        type="primary",
+        disabled=not asins or not SELENIUM_OK,
+        use_container_width=True,
+    )
 with col2:
-    uploaded = st.file_uploader("Load from file", type=["txt", "csv"],
-                                 label_visibility="collapsed")
-with col3:
-    export_placeholder = st.empty()
+    uploaded = st.file_uploader(
+        "Load from file", type=["txt", "csv"],
+        label_visibility="collapsed")
 
-# File upload handling
 if uploaded:
     content = uploaded.read().decode("utf-8", errors="ignore")
     st.session_state["file_asins"] = content
     st.rerun()
 
-if "file_asins" in st.session_state and not asin_input.strip():
-    asin_input = st.session_state.pop("file_asins", "")
-
 if not SELENIUM_OK:
-    st.error("⚠️ Selenium not installed. Run: `pip install selenium webdriver-manager`")
+    st.error("Selenium not installed. Run: pip install selenium webdriver-manager")
 
 # ── Run extraction ────────────────────────────────────────────────────────────
 
 if run and asins:
     st.divider()
 
-    # Stats placeholders
     stat_cols = st.columns(4)
     s_total   = stat_cols[0].empty()
     s_found   = stat_cols[1].empty()
@@ -333,29 +328,25 @@ if run and asins:
     s_imgs    = stat_cols[3].empty()
 
     def render_stats(results):
-        total  = len(results)
-        found  = sum(1 for r in results if r["status"] == "found")
-        failed = sum(1 for r in results if r["status"] == "failed")
-        imgs   = sum(len(r["images"]) for r in results)
-        s_total.metric("ASINs",        total)
-        s_found.metric("Found",        found,  delta=None)
-        s_failed.metric("Failed",      failed, delta=None)
-        s_imgs.metric("Total images",  imgs)
+        s_total.metric("ASINs",       len(results))
+        s_found.metric("Found",       sum(1 for r in results if r["status"] == "found"))
+        s_failed.metric("Failed",     sum(1 for r in results if r["status"] == "failed"))
+        s_imgs.metric("Total images", sum(len(r["images"]) for r in results))
 
-    progress_bar  = st.progress(0)
-    status_text   = st.empty()
-    results_area  = st.container()
+    progress_bar = st.progress(0)
+    status_text  = st.empty()
+    results_area = st.container()
 
     results = []
-    driver  = None
 
     try:
         status_text.info("🚀 Launching Chrome...")
         driver = get_driver()
 
         for i, asin in enumerate(asins):
-            status_text.info(f"⏳ [{i+1}/{len(asins)}]  Fetching **{asin}** from `{selected_domain}`...")
-            progress_bar.progress((i) / len(asins))
+            status_text.info(
+                f"⏳ [{i+1}/{len(asins)}]  Fetching **{asin}** from `{selected_domain}`...")
+            progress_bar.progress(i / len(asins))
 
             images = []
             try:
@@ -371,7 +362,7 @@ if run and asins:
                         pass
                 time.sleep(1.2)
                 images = extract_images(driver.page_source, driver)
-            except Exception as e:
+            except Exception:
                 pass
 
             status = "found" if images else "failed"
@@ -382,17 +373,14 @@ if run and asins:
             render_stats(results)
             progress_bar.progress((i + 1) / len(asins))
 
-            # Render result card immediately
             with results_area:
                 r = results[-1]
-                if r["status"] == "found":
-                    label = f"✅  **{r['asin']}** — {len(r['images'])} images (this variant)"
-                else:
-                    label = f"❌  **{r['asin']}** — no images found"
+                label = (f"✅  **{r['asin']}** — {len(r['images'])} images (this variant)"
+                         if r["status"] == "found"
+                         else f"❌  **{r['asin']}** — no images found")
 
                 with st.expander(label, expanded=(r["status"] == "found")):
                     if r["images"]:
-                        # Show images in a grid (5 per row)
                         cols_per_row = 5
                         for row_start in range(0, len(r["images"]), cols_per_row):
                             row_imgs = r["images"][row_start:row_start + cols_per_row]
@@ -409,12 +397,11 @@ if run and asins:
                         st.divider()
                         st.markdown("**Image URLs:**")
                         for j, url in enumerate(r["images"], 1):
-                            cols = st.columns([0.05, 0.85, 0.1])
-                            cols[0].caption(f"#{j}")
-                            cols[1].code(url, language=None)
-                            cols[2].link_button("Open", url)
+                            c = st.columns([0.05, 0.85, 0.1])
+                            c[0].caption(f"#{j}")
+                            c[1].code(url, language=None)
+                            c[2].link_button("Open", url)
 
-                        # Copy-all text area
                         st.text_area(
                             "All URLs (select all → copy)",
                             value="\n".join(r["images"]),
@@ -428,6 +415,7 @@ if run and asins:
 
     except Exception as e:
         st.error(f"Error: {e}")
+
     finally:
         progress_bar.progress(1.0)
         found = sum(1 for r in results if r["status"] == "found")
@@ -435,7 +423,6 @@ if run and asins:
         status_text.success(
             f"✅ Done — {found}/{len(results)} ASINs · {imgs} images total")
 
-    # Store results for CSV export
     st.session_state["last_results"] = results
 
 # ── Export CSV ────────────────────────────────────────────────────────────────
